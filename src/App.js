@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
-import { BrowserRouter as Router, Route } from 'react-router-dom';
-import { Security, SecureRoute, ImplicitCallback } from '@okta/okta-react';
+import { BrowserRouter as Router, Route, withRouter } from 'react-router-dom';
+import { OktaAuth, toRelativeUrl } from '@okta/okta-auth-js';
+import { Security, SecureRoute, LoginCallback } from '@okta/okta-react';
 
 import Navbar from './components/layout/Navbar';
 import Home from './components/pages/Home';
@@ -9,18 +10,30 @@ import Login from './components/auth/Login';
 
 import './App.css';
 
+const oktaAuth = new OktaAuth({
+  issuer: 'https://dev-2530788.okta.com/oauth2/default',
+  clientId: '0oa4091th4FTpalJf5d7',
+  redirectUri: window.location.origin + '/login/callback'
+});
+
 function onAuthRequired({ history }) {
   history.push('/login');
 }
 
 class App extends Component {
+  restoreOriginalUri;
+
+  constructor(props) {
+    super(props);
+    this.restoreOriginalUri = async (_oktaAuth, originalUri) => {
+      props.history.replace(toRelativeUrl(originalUri || '/', window.location.origin));
+    };
+  }
+
   render() {
     return (
       <Router>
-        <Security
-          issuer="https://dev-409495.oktapreview.com/oauth2/default"
-          client_id="0oafhkg1yupTnPW9z0h7"
-          redirect_uri={window.location.origin + '/implicit/callback'}
+        <Security oktaAuth={oktaAuth} restoreOriginalUri={this.restoreOriginalUri}
           onAuthRequired={onAuthRequired}
         >
           <div className="App">
@@ -31,10 +44,10 @@ class App extends Component {
               <Route
                 path="/login"
                 render={() => (
-                  <Login baseUrl="https://dev-409495.oktapreview.com" />
+                  <Login />
                 )}
               />
-              <Route path="/implicit/callback" component={ImplicitCallback} />
+              <Route path="/login/callback" component={LoginCallback} />
             </div>
           </div>
         </Security>
@@ -43,4 +56,12 @@ class App extends Component {
   }
 }
 
-export default App;
+const AppWithRouterAccess = withRouter(App);
+
+class RouterApp extends Component {
+  render() {
+    return (<Router><AppWithRouterAccess/></Router>);
+  }
+}
+
+export default RouterApp;
