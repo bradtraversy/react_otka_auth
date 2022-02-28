@@ -1,38 +1,26 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
-import { withAuth } from '@okta/okta-react';
+import { withOktaAuth } from '@okta/okta-react';
 
-export default withAuth(
+export default withOktaAuth(
   class Home extends Component {
-    state = { authenticated: null };
 
-    checkAuthentication = async () => {
-      const authenticated = await this.props.auth.isAuthenticated();
-      if (authenticated !== this.state.authenticated) {
-        this.setState({ authenticated });
-      }
-    };
-
-    async componentDidMount() {
-      this.checkAuthentication();
-    }
-
-    async componentDidUpdate() {
-      this.checkAuthentication();
+    constructor(props) {
+      super(props);
+      this.login = this.login.bind(this);
+      this.logout = this.logout.bind(this);
     }
 
     login = async () => {
-      this.props.auth.login('/');
+      this.props.history.push('/login');
     };
 
     logout = async () => {
-      this.props.auth.logout('/');
+      this.props.oktaAuth.signOut();
     };
 
     render() {
-      if (this.state.authenticated === null) return null;
-
-      const mainContent = this.state.authenticated ? (
+      const mainContent = this.props.authState?.isAuthenticated ? (
         <div>
           <p className="lead">
             You have entered the staff portal,{' '}
